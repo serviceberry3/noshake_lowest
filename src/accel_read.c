@@ -3,7 +3,7 @@
 #include <android/sensor.h>
 #include "drm_low.h"
 
-int main(int argv, char *argc[] ){
+int read_accelerometer() {
     printf("Welcome to the accelerometer reading program, running drm_setup()...\n");
 	int ret = drm_setup();
 
