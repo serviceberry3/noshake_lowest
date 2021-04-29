@@ -94,9 +94,7 @@ int drm_setup()
 	//return value. Let's HOPE it stays clean
 	int ret = 0;
 
-
 	//TODO: CLEAN UP ON PREMATURE RETURNS
-
 
 	//kill hwcomposer process so we can get drm master
 	system("stop vendor.hwcomposer-2-4");
@@ -536,9 +534,7 @@ int drm_setup()
 		printf("mmap64 3 test success\n");*/
 
 
-
 		//SET UP ENCODER AND CRTC
-
 
         //kernel mode
 		printf("Connection #%d: # modes: %d, # props: %d, # encoders: %d\n", conn.connection, conn.count_modes, conn.count_props, conn.count_encoders);
@@ -615,8 +611,8 @@ int drm_setup()
 		//mode_valid has to be set to true; otherwise driver won't do anything
 		crtc.mode_valid = 1;
 
-		crtc.x = 0;
-		crtc.y = 0;
+		crtc.x = 540;
+		crtc.y = 1140;
 
 		//Connect the CRTC to our newly created dumb buffer
 		if (ioctl(dri_fd, DRM_IOCTL_MODE_SETCRTC, &crtc) != 0) {
@@ -642,18 +638,36 @@ int drm_setup()
 	printf("Drm drop master success\n");
 	*/
 
-
 	//pick a sequence to run now
 	//ret = sequence_colors_fill_screen();
-	ret = sequence_oscillate_square();
-	
+	//ret = sequence_oscillate_square();
 
-	printf("DONE\n");
+	//draw static image once
+	draw_square(0x00000000, 1);
 
+	//display the back buffer
+	crtc.fb_id = cmd_dumb2.fb_id;
+
+	//Connect the CRTC to our newly created dumb buffer
+	if (ioctl(dri_fd, DRM_IOCTL_MODE_SETCRTC, &crtc) != 0) {
+		fprintf(stderr, "Drm mode set CRTC failed with error %d: %m\n", errno);
+		return errno;
+	}
+	printf("IOCTL_MODE_SETCRTC success\n");
+
+	//Bounce the square back and forth across the screen for 15 seconds.
+
+	printf("drm_setup() DONE\n");
+
+	return ret;
+}
+
+
+int close_dri() {
 	//close the DRI dev
 	close(dri_fd);
 
-	return ret;
+	return 0;
 }
 
 //display 100 seconds of beautiful colors filling the screen
@@ -682,8 +696,6 @@ int sequence_colors_fill_screen() {
 			else {
 				current_page = fb_base[j][1];
 			}
-
-
 			
 			printf("Coloring for connector #%d\n", j);
 
@@ -744,6 +756,20 @@ int sequence_colors_fill_screen() {
 }
 
 
+int adjust_crtc_offset(float x_off, float y_off) {
+	//make sure to use back buffer
+	crtc.fb_id = cmd_dumb2.fb_id;
+
+	crtc.x += (__u32) x_off;
+	crtc.y += (__u32) y_off;
+
+	//Connect the CRTC to the correct page (back page)
+	if (ioctl(dri_fd, DRM_IOCTL_MODE_SETCRTC, &crtc) != 0) {
+		fprintf(stderr, "Drm mode set CRTC failed with error %d: %m\n", errno);
+		return errno;
+	}
+}
+
 //make a red square bounce back and forth between the edges of the screen for 30 seconds
 int sequence_oscillate_square() {
 	//iterators
@@ -752,9 +778,7 @@ int sequence_oscillate_square() {
 	//draw static image once
 	draw_square(0x00000000, 1);
 
-
 	//Bounce the square back and forth across the screen for 15 seconds.
-
 
 	//use back buffer
 	crtc.fb_id = cmd_dumb2.fb_id;
@@ -784,7 +808,7 @@ int sequence_oscillate_square() {
 				crtc.x += 80;
 
 				//Connect the CRTC to the correct page (back page)
-				if (ioctl(dri_fd, DRM_IOCTL_MODE_SETCRTC, &crtc) !=0) {
+				if (ioctl(dri_fd, DRM_IOCTL_MODE_SETCRTC, &crtc) != 0) {
 					fprintf(stderr, "Drm mode set CRTC failed with error %d: %m\n", errno);
 					return errno;
 				}
@@ -811,8 +835,6 @@ int sequence_oscillate_square() {
 
 				time_taken += (double)t;
 			}
-
-
 		}
 
 		//print out average speed of a move (should be ~73 microseconds)
@@ -835,7 +857,6 @@ void draw_square(int color, int buff_full) {
 	int off = 0;
 
 
-
 	//iterate over all of our connectors (should just be one)
 	for (j = 0; j < res.count_connectors; j++)
 	{
@@ -852,7 +873,6 @@ void draw_square(int color, int buff_full) {
 
 		//if buff_full is 1, use entire buffer width (twice the width of the screen), otherwise just use half
 		x_width = (buff_full) ? fb_w[j][0] : fb_w[j][0] / 2;
-
 
 		printf("Coloring for connector #%d\n", j);
 
@@ -871,14 +891,14 @@ void draw_square(int color, int buff_full) {
 
 
 		//for all rows of pixels
-		for (y = 0; y < fb_h[j][0] / 2; y++) { //iterates ~4560 times   //fb_h[j][0] / 2
+		for (y = 0; y < fb_h[j][0]; y++) { //iterates ~4560 times   //fb_h[j][0] / 2
 		
-			if (y > 1000 && y < 1400) {
+			if (y > 2080 && y < 2480) {
 			//printf("Row number %d\n", y);
 			//for all pixels in the row
 				for (x = 0; x < x_width; x++) //iterates ~2160 times
 				{
-						if (x > 680 && x < 1080) {
+						if (x > 880 && x < 1280) {
 							//printf("Calculating pixel location, column number %d\n", x);
 							//calculate offset into framebuffer memory for this pixel
 							//note: need to skip over extra pad on side using off
@@ -900,8 +920,6 @@ void draw_square(int color, int buff_full) {
 							//set this pixel to the color
 							*(((uint32_t*) current_page) + location) = white;
 						}
-
-						
 				}
 			}
 
@@ -918,15 +936,16 @@ void draw_square(int color, int buff_full) {
 					//printf("Setting pixel to color...\n");
 					//set this pixel to the color
 					*(((uint32_t*) current_page) + location) = white;
-				
 				}
 			}
 
 
-			//apparently the fb isn't acutally 1080 x 2280 :)
-			off+=16;
+			//apparently the fb isn't actually 1080 x 2280 :)
+			off += 16;
 		}
 
 
 	}
+
+	printf("Finished draw_square()\n");
 }

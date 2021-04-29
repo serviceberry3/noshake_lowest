@@ -4,6 +4,7 @@
 #include "convolve.h"
 #include "constants.h"
 #include "utils.h"
+#include "drm_low.h"
 
 //whether to apply the NoShake correction or leave text/square stagnant
 #define APPLY_CORRECTION true
@@ -52,8 +53,10 @@ convolver* y_signal_convolver_y;
 //all processing of accelerometer event data for NoShake takes place here
 int noShakeZhongLin(ASensorEvent* event) {
     //avoid processing excessive accelerations
-    StempAcc[0] = rangeValue(event->acceleration.x, MAX_ACC, MAX_ACC);
-    StempAcc[1] = rangeValue(event->acceleration.y, MAX_ACC, MAX_ACC);
+    StempAcc[0] = rangeValue(event->acceleration.x, -MAX_ACC, MAX_ACC);
+    StempAcc[1] = rangeValue(event->acceleration.y, -MAX_ACC, MAX_ACC);
+
+    //printf("StempAcc is %f and %f\n", StempAcc[0], StempAcc[1]);
 
     //apply the low pass filter to reduce noise
     lowPassFilter(StempAcc, Sacc, LOW_PASS_ALPHA);
@@ -107,7 +110,7 @@ int noShakeZhongLin(ASensorEvent* event) {
 
 
     //calculate how much we needto move text in x direction for this frame
-    toMoveX = -1 *                                                               //flip
+    toMoveX =                                                              //flip
         (deltaY - POSITION_FRICTION_DEFAULT * deltaY)         //reduce deltaY by adding some friction. Use deltaY for X displacement b/c screen is horizontal
         * Y_FACTOR;                                          //arbitrary scaling factor
 
@@ -115,6 +118,8 @@ int noShakeZhongLin(ASensorEvent* event) {
     if (APPLY_CORRECTION) {
         //set crtc x and y offsets appropriately
         printf("Corrections to be made are %f on x and %f on y\n", toMoveX, toMoveY);
+
+        adjust_crtc_offset(toMoveY, toMoveX);
     }
 
     return 0;
@@ -139,7 +144,7 @@ int main(int argv, char* argc[]) {
     imp_resp_arr_populate(imp_resp_data);
 
     //store sum of filter
-    impulseSum = imp_resp_arr_get_sum(imp_resp_data);
+    impulseSum = imp_resp_arr_get_sum(imp_resp_data); //should be .527106
 
     //instantiate a convolver which has a pointer to both the circular buffer and the impulse response array
     y_signal_convolver_x = convolver_create(x_buf, imp_resp_data);
@@ -152,10 +157,16 @@ int main(int argv, char* argc[]) {
         printf("setup_accelerometer() failed, returning from main()...\n");
         return -1;
     }
+    else {
+        printf("setup_accelerometer() SUCCESS\n");
+    }
 
     //vars to store accelerometer event data
     ASensorEvent* event;
     float x, y, z;
+
+    //draw square
+    drm_setup();
 
     //main loop of the program
     while (1) {

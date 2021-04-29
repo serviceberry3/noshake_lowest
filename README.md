@@ -2,6 +2,7 @@ This is a version of my text_stabilization repo that doesn't do any rerendering.
 
 # Requirements #
  - Device: Google Pixel 4
+ - Android NDK: preferably version android-ndk-r11c-linux-x86_64 or similar
  - AOSP build: aosp_flame-userdebug 11 RQ1A.201205.008.A1 (for some reason only AOSP around this time seems to have the required libs to access the accelerometer)
  - DRM driver modifications (custom kernel) as outlined in [this repo](https://github.com/serviceberry3/android_drm_dumb)
 

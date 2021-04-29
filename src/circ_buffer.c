@@ -5,7 +5,7 @@
 
 circ_buf* circ_buf_create(size_t sz) {
     circ_buf* new_buffer = malloc(sizeof(circ_buf));
-    new_buffer->buf = malloc(sizeof(float) * sz);
+    new_buffer->buf = calloc(sizeof(float), sz);
 
     new_buffer->max = sz;
     circ_buf_reset(new_buffer);

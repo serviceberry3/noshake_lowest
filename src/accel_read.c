@@ -34,12 +34,6 @@ int setup_accelerometer() {
 	if (numSensors == 0)
 		return -1;
 
-	for (int count = 0; count < numSensors; count++) {
-		printf("Name: %s, mindelay: %d\n", ASensor_getName(sensorList[count]), ASensor_getMinDelay(sensorList[count]));
-		//printf("Vendor :%s\n", ASensor_getVendor(sensorList[count]));
-		//printf("Type :%s\n", ASensor_getStringType(sensorList[count]));
-	}
-
 	//create a sensor eventqueue
 	eventQueue = ASensorManager_createEventQueue(sensorManager, ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS), looperId, NULL, NULL);
 
@@ -48,17 +42,28 @@ int setup_accelerometer() {
 		return -1;
 	}
 
-	//turn on accelerometer
-	for (int count = 0; count < 1; count++) {
-		if (ASensorEventQueue_enableSensor(eventQueue, sensorList[count]) != 0) {
-			printf("error, cannot enable sensor %s\n", ASensor_getName(sensorList[count]));
-			return -1;
-		}
-		else
-			printf("Sucessfully enabled sensor %s\n", ASensor_getName(sensorList[count]));
+	const char* name;
 
-		//set delivery delay rate in microseconds for the accelerometer
-		ASensorEventQueue_setEventRate(eventQueue, sensorList[count], 10000);
+	for (int count = 0; count < numSensors; count++) {
+		//get name of the sensor
+		name = ASensor_getName(sensorList[count]);
+
+		printf("Name: %s, mindelay: %d\n", name, ASensor_getMinDelay(sensorList[count]));
+		//printf("Vendor :%s\n", ASensor_getVendor(sensorList[count]));
+		//printf("Type :%s\n", ASensor_getStringType(sensorList[count]));
+
+
+		if (!(strcmp(name, "Linear Acceleration Sensor"))) {
+			if (ASensorEventQueue_enableSensor(eventQueue, sensorList[count]) != 0) {
+				printf("ERROR: cannot enable sensor %s\n", name);
+				return -1;
+			}
+			else
+				printf("Sucessfully enabled sensor %s\n", name);
+
+			//set delivery delay rate in microseconds for the accelerometer
+			ASensorEventQueue_setEventRate(eventQueue, sensorList[count], 10000);
+		}
 	}
 
 	return 0;
@@ -67,8 +72,6 @@ int setup_accelerometer() {
 ASensorEvent* read_accelerometer() {
 	//poll for events, timeout -1 means wait forever until got data
 	if ((identity = ALooper_pollAll(-1, NULL, NULL, NULL)) >= 0) {
-		//printf("Iteration %d\n", count);
-
 		//clear memory at '''events''' to 0
 		memset(event, 0, sizeof(ASensorEvent));
 
@@ -85,9 +88,12 @@ ASensorEvent* read_accelerometer() {
 			printf("No pending sensor event\n");
 			return NULL;
 		}
+		else {
+			//printf("Found some event on ASensorEventQueue\n");
+		}
 
 		//if it's an accelerometer event, print the data and return it
-		if (event->type == ASENSOR_TYPE_ACCELEROMETER) {
+		if (event->type == ASENSOR_TYPE_LINEAR_ACCELERATION) {
 			//printf("[Accelerometer] x = %f  y = %f  z = %f\n", event->acceleration.x, event->acceleration.y, event->acceleration.z);
 			return event;
 		}

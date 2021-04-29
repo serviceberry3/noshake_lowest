@@ -27,7 +27,11 @@ int sequence_oscillate_square();
 
 void draw_square(int color, int buff_full);
 
+int adjust_crtc_offset(float x_off, float y_off);
+
 int drm_setup();
+
+int close_dri();
 
 #endif
 
