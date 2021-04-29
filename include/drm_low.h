@@ -1,3 +1,5 @@
+#ifndef DRM_LOW_H
+#define DRM_LOW_H
 
 #include <unistd.h>
 #include <drm/drm.h>
@@ -26,4 +28,6 @@ int sequence_oscillate_square();
 void draw_square(int color, int buff_full);
 
 int drm_setup();
+
+#endif
 

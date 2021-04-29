@@ -1,5 +1,4 @@
 INC=/home/nodog/docs/files/DroneJob/noshake_lowest/include
-#-I/home/nodog/Android/Sdk/ndk/android-ndk-r21d-linux-x86_64/android-ndk-r21d/sysroot/usr/include/android 
 
 #source file folder
 SRC_DIR := src
@@ -41,7 +40,7 @@ clean:
 
 #$@ is name of target being generated
 $(EXE): $(OBJ) | $(BIN_DIR)
-	$(CROSS_COMPILER) $^ -o $(BIN_DIR)$@ -w $(LIBS_DIR)/android-21/libandroid.so
+	$(CROSS_COMPILER) $^ -o $(BIN_DIR)$@ -w $(LIBS_DIR)/android-21/libandroid.so -lm
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(CROSS_COMPILER) $(CPPFLAGS) -c $< -o $@
